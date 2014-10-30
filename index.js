@@ -1,4 +1,5 @@
 var fs = require('fs')
+var path = require('path')
 var copyDereferenceSync = require('copy-dereference').sync
 
 var isWindows = process.platform === 'win32'
@@ -10,7 +11,7 @@ function symlinkOrCopy () {
 
 module.exports.sync = symlinkOrCopySync
 function symlinkOrCopySync (srcPath, destPath) {
-  if (isWindows) {
+  if (false) {
     // We might be able to optimize this case in the future, for instance by
     // detecting whether we have rights to create symlinks, or perhaps even
     // creating junctions.
@@ -24,7 +25,9 @@ function symlinkOrCopySync (srcPath, destPath) {
       // https://github.com/joyent/node/issues/7902
       // Can someone please send a patch to Node? :)
       srcPath = fs.realpathSync(srcPath)
-    } else if (srcPath[0] !== '/') {
+    }
+
+    // else if (srcPath[0] !== '/') {
       // Resolve relative paths.
       // Note: On Mac and Linux (unlike Windows), process.cwd() never contains
       // symlink components, due to the way getcwd is implemented. As a
@@ -32,9 +35,18 @@ function symlinkOrCopySync (srcPath, destPath) {
       // path instead of the slower path.resolve(). (It seems unnecessary in
       // principle that path.resolve() is slower. Does anybody want to send a
       // patch to Node?)
-      srcPath = process.cwd() + '/' + srcPath
-    }
+      // srcPath = process.cwd() + '/' + srcPath
+    // }
 
-    fs.symlinkSync(srcPath, destPath)
+    srcPath = path.resolve(srcPath)
+    var stat = fs.statSync(srcPath);
+
+    if(stat.isDirectory()) {
+        fs.symlinkSync(srcPath, destPath, 'dir')
+    } else if(stat.isFile()) {
+        fs.symlinkSync(srcPath, destPath, 'file')
+    } else {
+        fs.symlinkSync(srcPath, destPath)
+    }
   }
 }
